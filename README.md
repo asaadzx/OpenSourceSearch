@@ -107,6 +107,10 @@ After selecting any project from the results, an actions menu will appear:
 | **Find similar projects** | Search for similar projects automatically                          |
 | **Open in browser**       | Open the project link directly in your browser                     |
 
+<img width="720" height="295" alt="Image" src="https://github.com/user-attachments/assets/dc68f08d-fdeb-4540-b1db-d97aa657cf3a" />
+<img width="720" height="654" alt="Image" src="https://github.com/user-attachments/assets/2b53f456-6eeb-4906-99db-d2d77787a135" />
+<img width="720" height="975" alt="Image" src="https://github.com/user-attachments/assets/f947925f-de9b-405d-a34f-8c734584f24f" />
+
 3. Analyzing a Project Directly via URL
 
 Select Analyze project by URL and enter the link directly:
