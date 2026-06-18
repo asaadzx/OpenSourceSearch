@@ -5,8 +5,8 @@ Search for any open-source project in your own words — in any language
 What is OPS?
 
 OPS is a command-line interface (CLI) tool that allows you to search for
-open-source projects across 9 platforms simultaneously, with full support for
-any language in the world. Describe what you need in your own language — Arabic,
+open-source projects across 9 platforms simultaneously Or choose one platform to focus your search on. , with full support for
+any language in the world. Describe what you need In simple terms in your own language — Arabic,
 French, Japanese, or any other — and the tool will automatically handle
 translation, searching, and ranking using AI.
 
@@ -56,7 +56,7 @@ if any API fails.
 
 Each result receives a final score calculated as follows:
 
-\text{Final Score} = (\text{Description Match} \times 50\%) + (\text{Stars} \times 30\%) + (\text{Usage} \times 20\%)
+<img width="555" height="1016" alt="Image" src="https://github.com/user-attachments/assets/2fd81142-2a72-421d-84f3-3a7013a17fe4" />
 
 💾 Smart Cache System
 
