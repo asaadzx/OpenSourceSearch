@@ -1,8 +1,23 @@
 import re
+import sys
 import requests
 from urllib.parse import quote
 
 from core.config import HEADERS_BROWSER, TIMEOUTS
+
+_LANG_CODE_MAP = {
+    "Arabic": "ar", "French": "fr", "Spanish": "es", "German": "de",
+    "Italian": "it", "Portuguese": "pt", "Russian": "ru", "Japanese": "ja",
+    "Korean": "ko", "Chinese": "zh", "Hindi": "hi", "Turkish": "tr",
+    "Dutch": "nl", "Polish": "pl", "Swedish": "sv", "Greek": "el",
+    "Czech": "cs", "Romanian": "ro", "Vietnamese": "vi", "Thai": "th",
+    "Indonesian": "id", "Hebrew": "he", "Malay": "ms",
+}
+
+LANGUAGE_NAMES = list(_LANG_CODE_MAP.keys())
+
+def _lang_code(name: str) -> str:
+    return _LANG_CODE_MAP.get(name, name[:2])
 
 _ARABIC_RANGE = r'[\u0600-\u06FF]+'
 _CJK_RANGE = r'[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]+'
@@ -28,66 +43,6 @@ def detect_language(text: str) -> str:
     return "en"
 
 
-_AR_FALLBACK = {
-    "تخزين سحابي مجاني": "free cloud storage",
-    "تخزين سحابي": "cloud storage",
-    "تخزين": "storage", "سحابي": "cloud", "مجاني": "free",
-    "ذكاء اصطناعي": "artificial intelligence",
-    "تعلم آلي": "machine learning",
-    "واجهة برمجة": "API",
-    "سطر الأوامر": "CLI",
-    "مفتوح المصدر": "open source",
-    "نسخ احتياطي": "backup",
-    "قاعدة بيانات": "database",
-    "إطار عمل": "framework",
-    "لوحة تحكم": "dashboard",
-    "جدار ناري": "firewall",
-    "هندسة عكسية": "reverse engineering",
-    "اختبار اختراق": "penetration testing",
-    "شبكة لاسلكية": "wireless network",
-    "كلمة مرور": "password",
-    "بحث": "search", "ترجمة": "translation",
-    "شبكة": "network", "واجهة": "interface",
-    "تطبيق": "application", "برنامج": "software",
-    "أداة": "tool", "مكتبة": "library",
-    "خادم": "server", "عميل": "client",
-    "ملفات": "files", "ملف": "file",
-    "صور": "images", "صورة": "image",
-    "فيديو": "video", "صوت": "audio",
-    "نص": "text", "بيانات": "data",
-    "أمان": "security", "تشفير": "encryption",
-    "ضغط": "compression", "مزامنة": "sync",
-    "مشاركة": "sharing", "رفع": "upload",
-    "تنزيل": "download", "تحليل": "analytics",
-    "مراقبة": "monitoring", "نشر": "deployment",
-    "حاويات": "containers", "أتمتة": "automation",
-    "اختبار": "testing", "توثيق": "documentation",
-    "رسم": "drawing", "خريطة": "map",
-    "تقويم": "calendar", "مهام": "tasks",
-    "ملاحظات": "notes", "دردشة": "chat",
-    "بريد": "email", "إشعارات": "notifications",
-    "تقارير": "reports", "فاتورة": "invoice",
-    "دفع": "payment", "تسوق": "shopping",
-    "موقع": "website", "وب": "web",
-    "جوال": "mobile", "سطح مكتب": "desktop",
-    "اختراق": "penetration testing",
-    "واي فاي": "wifi", "وايفاي": "wifi",
-    "تخمين": "brute force", "مسح": "scanning",
-    "ثغرة": "vulnerability", "هجوم": "attack",
-    "بروكسي": "proxy", "حزم": "packets",
-    "استنشاق": "sniffing",
-}
-
-
-def _translate_ar_fallback(text: str) -> str:
-    result = text.strip()
-    for ar, en in sorted(_AR_FALLBACK.items(), key=lambda x: -len(x[0])):
-        result = result.replace(ar, en)
-    result = re.sub(r'[\u0600-\u06FF]+', '', result)
-    result = re.sub(r'\s+', ' ', result).strip()
-    return result
-
-
 def translate_to_english(text: str) -> str:
     if detect_language(text) == "en":
         return text
@@ -102,6 +57,7 @@ def translate_to_english(text: str) -> str:
             data = r.json()
             t = "".join(part[0] for part in data[0] if part and part[0])
             if t and detect_language(t) == "en":
+                print("  [Translation] Google Translate → English", file=sys.stderr)
                 return t.strip()
     except Exception:
         pass
@@ -109,6 +65,7 @@ def translate_to_english(text: str) -> str:
         from deep_translator import GoogleTranslator
         r = GoogleTranslator(source="auto", target="en").translate(text)
         if r and r.strip() and detect_language(r.strip()) == "en":
+            print("  [Translation] deep_translator → English", file=sys.stderr)
             return r.strip()
     except Exception:
         pass
@@ -122,6 +79,7 @@ def translate_to_english(text: str) -> str:
         if r.status_code == 200:
             t = r.json().get("responseData", {}).get("translatedText", "")
             if t and detect_language(t) == "en" and t.upper() != text.upper():
+                print("  [Translation] MyMemory → English", file=sys.stderr)
                 return t.strip()
     except Exception:
         pass
@@ -134,20 +92,31 @@ def translate_to_english(text: str) -> str:
         if r.status_code == 200:
             t = r.json().get("translation", "")
             if t and detect_language(t) == "en":
+                print("  [Translation] Lingva → English", file=sys.stderr)
                 return t.strip()
     except Exception:
         pass
-    fallback = _translate_ar_fallback(text)
-    if fallback and any(c.isascii() and c.isalpha() for c in fallback):
-        return fallback
+    try:
+        from ai_backend.llm_handler import ai_chat
+        result = ai_chat(
+            f"Translate the following text to English. "
+            f"Return ONLY the translation, nothing else.\n\n{text}",
+            min_len=5,
+        )
+        if result:
+            print("  [Translation] AI chat → English", file=sys.stderr)
+            return result.strip()
+    except Exception:
+        pass
     return text
 
 
 def translate_text(text: str, target_lang: str) -> str:
+    code = _lang_code(target_lang)
     try:
         r = requests.get(
             "https://translate.googleapis.com/translate_a/single",
-            params={"client": "gtx", "sl": "auto", "tl": target_lang[:5], "dt": "t", "q": text[:1000]},
+            params={"client": "gtx", "sl": "auto", "tl": code, "dt": "t", "q": text[:1000]},
             headers=HEADERS_BROWSER,
             timeout=TIMEOUTS["translate"],
         )
@@ -155,39 +124,43 @@ def translate_text(text: str, target_lang: str) -> str:
             data = r.json()
             t = "".join(part[0] for part in data[0] if part and part[0])
             if t and t.strip():
+                print(f"  [Translation] Google Translate → {target_lang}", file=sys.stderr)
                 return t.strip()
+    except Exception:
+        pass
+    try:
+        from deep_translator import GoogleTranslator
+        r = GoogleTranslator(source="auto", target=code).translate(text)
+        if r and r.strip():
+            print(f"  [Translation] deep_translator → {target_lang}", file=sys.stderr)
+            return r.strip()
     except Exception:
         pass
     try:
         r = requests.get(
             "https://api.mymemory.translated.net/get",
-            params={"q": text[:500], "langpair": f"en|{target_lang[:2]}"},
+            params={"q": text[:500], "langpair": f"en|{code}"},
             headers=HEADERS_BROWSER,
             timeout=TIMEOUTS["translate"],
         )
         if r.status_code == 200:
             t = r.json().get("responseData", {}).get("translatedText", "")
             if t and t.strip() and t.upper() != text.upper():
+                print(f"  [Translation] MyMemory → {target_lang}", file=sys.stderr)
                 return t.strip()
-    except Exception:
-        pass
-    try:
-        from deep_translator import GoogleTranslator
-        r = GoogleTranslator(source="auto", target=target_lang[:2]).translate(text)
-        if r and r.strip():
-            return r.strip()
     except Exception:
         pass
     try:
         r = requests.post(
             "https://libretranslate.com/translate",
-            json={"q": text[:500], "source": "en", "target": target_lang[:2]},
+            json={"q": text[:500], "source": "en", "target": code},
             headers={"Content-Type": "application/json"},
             timeout=TIMEOUTS["translate"],
         )
         if r.status_code == 200:
             t = r.json().get("translatedText", "")
             if t and t.strip():
+                print(f"  [Translation] LibreTranslate → {target_lang}", file=sys.stderr)
                 return t.strip()
     except Exception:
         pass
@@ -199,6 +172,7 @@ def translate_text(text: str, target_lang: str) -> str:
             min_len=5,
         )
         if result:
+            print(f"  [Translation] AI chat → {target_lang}", file=sys.stderr)
             return result.strip()
     except Exception:
         pass

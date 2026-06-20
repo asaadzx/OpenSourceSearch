@@ -20,7 +20,7 @@ from rich.rule import Rule
 
 from core.config import TIMEOUTS, PLATFORMS, LICENSE_MAP, UNKNOWN_LICENSE, QUESTIONARY_STYLE
 from core.cache import lookup_cache, save_to_cache
-from utils.translation import detect_language, translate_to_english, translate_text
+from utils.translation import detect_language, translate_to_english, translate_text, LANGUAGE_NAMES
 from ai_backend.llm_handler import ai_chat, safe_parse_ai_json
 from ai_backend.ranking import ai_rank_results
 from search_engines import (
@@ -30,13 +30,6 @@ from search_engines import (
 )
 
 console = Console()
-
-_TRANSLATE_LANGUAGES = [
-    "Arabic", "French", "Spanish", "German", "Italian", "Portuguese",
-    "Russian", "Japanese", "Korean", "Chinese", "Hindi", "Turkish",
-    "Dutch", "Polish", "Swedish", "Greek", "Czech", "Romanian",
-    "Vietnamese", "Thai", "Indonesian", "Hebrew", "Malay",
-]
 
 _STOPWORDS = {
     "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
@@ -408,7 +401,7 @@ Do not repeat the project name more than once. Write in plain English."""
     if want_translate:
         target_lang = questionary.select(
             "Translate to:",
-            choices=_TRANSLATE_LANGUAGES,
+            choices=LANGUAGE_NAMES,
             style=QUESTIONARY_STYLE,
         ).ask()
         if target_lang:
@@ -516,7 +509,7 @@ def action_translate_description(result: dict):
         return
     target_lang = questionary.select(
         "Translate description to:",
-        choices=_TRANSLATE_LANGUAGES,
+        choices=LANGUAGE_NAMES,
         style=QUESTIONARY_STYLE,
     ).ask()
     if not target_lang:
@@ -702,7 +695,7 @@ Write in plain English."""
             if want_translate:
                 target_lang = questionary.select(
                     "Translate to:",
-                    choices=_TRANSLATE_LANGUAGES,
+                    choices=LANGUAGE_NAMES,
                     style=QUESTIONARY_STYLE,
                 ).ask()
                 if target_lang:
