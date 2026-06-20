@@ -1,18 +1,43 @@
-# OPEN-SOURCE-SEARCH-
+# OpenSourceSearch
+
 <img width="311" height="213" alt="Image" src="https://github.com/user-attachments/assets/3f2f37be-33ad-4c20-95ed-9a4848a83e45" />
-Search for any open-source project in your own words — in any language
 
-What is OPS?
+Search for open-source projects in any language. Describe what you need in plain English, Arabic, French, or any language — the tool handles translation, searches 9 platforms simultaneously, and ranks results with AI.
 
-OPS is a command-line interface (CLI) tool that allows you to search for
-open-source projects across 9 platforms simultaneously Or choose one platform to focus your search on. , with full support for
-any language in the world. Describe what you need In simple terms in your own language — Arabic,
-French, Japanese, or any other — and the tool will automatically handle
-translation, searching, and ranking using AI.
+## What is OpenSourceSearch?
 
+A CLI tool that searches for open-source projects across **9 platforms** simultaneously. Describe what you need in simple terms in your own language — Arabic, French, Japanese, or any other — and the tool automatically handles translation, searching, and ranking using AI.
+
+```
 Description in any language → Translation to English → Parallel search across 9 platforms → Smart ranking → Accurate results
+```
 
-Supported Platforms
+## Project Structure
+
+```
+OpenSourceSearch/
+├── main.py                  # CLI entry point (actions, menus, orchestration)
+├── .env.example             # Environment variables template (copy to .env)
+├── .gitignore
+├── core/
+│   ├── config.py            # Constants, API keys, platforms, license map
+│   └── cache.py             # Atomic file writes, similarity-based cache lookup
+├── search_engines/
+│   ├── platform_base.py     # DDG search, dedup, keyword prefilter
+│   ├── github_search.py     # GitHub REST API (reads GITHUB_TOKEN from .env)
+│   ├── pypi_search.py       # PyPI JSON API (with XML-RPC fallback)
+│   ├── npm_search.py        # npm registry API
+│   ├── huggingface_search.py
+│   └── docker_search.py
+├── ai_backend/
+│   ├── llm_handler.py       # DuckDuckGo Chat primary, Pollinations/g4f fallbacks
+│   └── ranking.py           # AI scoring: 50% match + 30% stars + 20% usage
+└── utils/
+    ├── translation.py       # Multi-script language detection (Arabic, CJK, Cyrillic, etc.)
+    └── logger.py            # Centralized file logging
+```
+
+## Supported Platforms
 
 | Platform         | Connection Type | Available Data                               |
 | :--------------- | :-------------- | :------------------------------------------- |
@@ -26,173 +51,193 @@ Supported Platforms
 | **Codeberg**     | DuckDuckGo      | Targeted search results                      |
 | **SourceForge**  | DuckDuckGo      | Targeted search results                      |
 
-Features
+## Features
 
-🌍 Support for Any Language in the World
+### 🌍 Support for Any Language in the World
 
-Write your query in any non-English language and it will be translated
-automatically via a chain of translation engines:
+Write your query in any non-English language. Translation chain:
 
-Google Translate → deep_translator → MyMemory → Lingva → Backup built-in
-dictionary
+```
+Google Translate → deep_translator → MyMemory → Lingva → Built-in dictionary fallback
+```
 
-🤖 AI Query Expansion
+Language detection now supports **Arabic, Japanese, Korean, Russian, Hindi, Chinese, and more** — not just Arabic vs English.
 
-You don't need to know the exact technical terms. The AI analyzes your
-description and generates:
+### 🤖 AI Query Expansion
 
-  - sub_queries — sub-queries if your request contains more than one concept.
-  - query1 / query2 / query3 — precise technical keywords.
-  - keywords — vocabulary for preliminary filtering.
-  - language / type — suggested programming language and project type.
+The AI analyzes your description and generates:
+- **sub_queries** — multiple concepts broken into separate searches
+- **query1 / query2 / query3** — precise technical keywords
+- **keywords** — vocabulary for preliminary filtering
+- **language / type** — suggested programming language and project type
 
-⚡ High-Speed Parallel Search
+### ⚡ High-Speed Parallel Search
 
-The tool searches all platforms concurrently using ThreadPoolExecutor with a
-maximum timeout of 25 seconds, and an automatic fallback mechanism to DuckDuckGo
-if any API fails.
+Searches all platforms concurrently via `ThreadPoolExecutor` (max 25s timeout). Automatic DuckDuckGo fallback if any API fails.
 
-🧠 Smart AI Ranking
+### 🧠 Smart AI Ranking
 
-Each result receives a final score calculated as follows:
+Each result scored as: **50% description match + 30% star count + 20% usage/downloads**. AI evaluates semantic relevance, not just keyword matching.
 
-<img width="555" height="1016" alt="Image" src="https://github.com/user-attachments/assets/2fd81142-2a72-421d-84f3-3a7013a17fe4" />
+### 💾 Smart Cache System
 
-💾 Smart Cache System
+- Saves previous queries in `query_cache.json`
+- Reuses cached results at ≥80% similarity via difflib
+- Auto-evicts oldest 10% of entries when exceeding 100,000 words
+- Atomic writes via `tempfile.mkstemp` + `os.replace` — no data corruption on interrupt
 
-  - Saves previous queries in query_cache.json.
-  - Reuses cached queries if the new request has an 80% or greater similarity
-    match.
-  - Automatically clears itself when it exceeds 100,000 words.
+### 🤖 Multi-Layer AI Engines
 
-🔄 Multi-Layer AI Engines
+Priority order to guarantee a response:
 
-To guarantee a response under all circumstances:
+```
+DuckDuckGo Chat (GPT-4o-mini) → DuckDuckGo Chat (Claude 3 Haiku) → Pollinations AI → g4f
+```
 
-g4f (GPT-4o / Claude / Llama) → gpt-4o-mini → DuckDuckGo Chat → Pollinations AI
+## Installation
 
-Installation
+### Prerequisite: Install uv
 
-# 1. Clone the project
-git clone https://github.com/mohamedw8/OPEN-SOURCE-SEARCH-.git
-cd ops.py
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+Or via pip: `pip install uv`
 
-# 2. Install requirements
-pip install requests questionary rich duckduckgo-search deep_translator g4f
+### Setup
 
-How to Use
+```bash
+# 1. Clone
+git clone https://github.com/asaadzx/OpenSourceSearch.git
+cd OpenSourceSearch
 
-1. Searching for a Project
+# 2. Install dependencies & create venv
+uv sync
 
-Select Search for projects, then choose the platforms you want to search, and
-write what you are looking for in any language.
+# 3. (Optional) Configure GitHub token for higher API rate limits
+cp .env.example .env
+# Then edit .env with your GitHub token
 
-Examples:
+# 4. Run
+uv run python3 main.py
+```
 
-# In Arabic: أداة لفحص شبكات الواي فاي (WiFi network scanning tool)
-# In English: web scraper with javascript support
-# In French: outil de compression de fichiers (File compression tool)
+For development (includes pytest):
+```bash
+uv sync --extra dev
+uv run pytest tests/ -q
+```
 
-2. Available Actions for Each Project
+> **Note:** `g4f` is optional (`uv sync --extra ai`) — the tool defaults to DuckDuckGo Chat which is faster and more stable.
 
-After selecting any project from the results, an actions menu will appear:
+### GitHub Token (Recommended)
+
+To avoid GitHub API rate limits (60 req/hr unauthenticated vs 5000 req/hr authenticated), provide a token via **either** method:
+
+**Option 1 — `.env` file (persistent, recommended):**
+```bash
+cp .env.example .env
+# Then edit .env:
+#   GITHUB_TOKEN="ghp_your_token_here"
+```
+
+**Option 2 — Environment variable (session only):**
+```bash
+export GITHUB_TOKEN="your_github_token"
+```
+
+Create a token at https://github.com/settings/tokens — no scopes are needed for public repository searches.
+
+## How to Use
+
+### 1. Searching for a Project
+
+```
+python3 main.py
+```
+
+Select **Search for projects**, choose platforms, describe what you need in any language:
+
+```
+# Arabic: أداة لفحص شبكات الواي فاي
+# English: web scraper with javascript support
+# French: outil de compression de fichiers
+# Japanese: スクリーンショットを撮るツール
+```
+
+### 2. Available Actions for Each Project
 
 | Action                    | Function                                                           |
 | :------------------------ | :----------------------------------------------------------------- |
-| **Summary**               | Detailed project summary generated by AI from the README           |
+| **Summary**               | AI-generated summary from the README                               |
 | **Usage**                 | Installation and usage steps with copy-ready commands              |
-| **Translate description** | Translate the project description into any language of your choice |
-| **License info**          | License details: Allowed, Forbidden, and Conditions                |
+| **Translate description** | Translate the description into any language                        |
+| **License info**          | Allowed / Forbidden / Conditions for the project's license         |
 | **Clone command**         | Ready-to-copy `git clone` command                                  |
-| **Find similar projects** | Search for similar projects automatically                          |
-| **Open in browser**       | Open the project link directly in your browser                     |
+| **Find similar projects** | Auto-search for related projects                                   |
+| **Open in browser**       | Open the project URL in your browser                               |
 
-<img width="720" height="295" alt="Image" src="https://github.com/user-attachments/assets/dc68f08d-fdeb-4540-b1db-d97aa657cf3a" />
-<img width="720" height="654" alt="Image" src="https://github.com/user-attachments/assets/2b53f456-6eeb-4906-99db-d2d77787a135" />
-<img width="720" height="975" alt="Image" src="https://github.com/user-attachments/assets/f947925f-de9b-405d-a34f-8c734584f24f" />
+### 3. Analyze by URL
 
-3. Analyzing a Project Directly via URL
+Paste a URL directly (e.g., `https://github.com/owner/repo`) to inspect a project without searching.
 
-Select Analyze project by URL and enter the link directly:
+### 4. Compare Projects
 
-https://github.com/owner/repo
+Enter 2–4 project URLs or names. Get a feature comparison table and AI-powered analysis.
 
-The tool automatically fetches project details via the GitHub API and enables
-all available actions on it without requiring a search.
-<img width="720" height="473" alt="Image" src="https://github.com/user-attachments/assets/98f44b18-cf5d-444e-9780-713402228fae" />
+## How It Works
 
-4. Project Comparison
+```
+┌──────────────────────────────────────────┐
+│              User Request                │
+└────────────────┬─────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│          Language Detection              │
+│     (Arabic / Japanese / Korean / etc.)  │
+└────────────────┬─────────────────────────┘
+                 │ (non-English)
+                 ▼
+┌──────────────────────────────────────────┐
+│         Translate to English             │
+│    Google → MyMemory → Lingva → fallback │
+└────────────────┬─────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│          AI Query Expansion              │
+│ sub_queries + q1/q2/q3 + keywords + lang │
+└────────────────┬─────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│      Parallel Search (9 Platforms)       │
+│     ThreadPoolExecutor (max 25s)         │
+├──────────────────────┬───────────────────┤
+│   Direct API          │   DDG Fallback   │
+│ GitHub / HuggingFace  │ GitLab/Bitbucket │
+│ PyPI / npm / Docker   │ Codeberg/SF      │
+└──────────────────────┴───────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│          Smart Deduplication             │
+│     (by URL + normalized project name)   │
+└────────────────┬─────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│       AI Pre-filter + Ranking            │
+│    50% match + 30% stars + 20% usage     │
+└────────────────┬─────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│         Results Table + Actions          │
+└──────────────────────────────────────────┘
+```
 
-Select Compare projects and enter between 2 to 4 projects (URLs or names):
-
-Project 1: https://github.com/owner/repo-a
-Project 2: https://github.com/owner/repo-b
-Project 3: (leave blank to finish)
-<img width="720" height="873" alt="Image" src="https://github.com/user-attachments/assets/a3ead0ad-f73e-4645-b515-6c0e6f9cff19" />
-You will get:
-
-  - A comprehensive comparison table showing stars, language, license, and key
-    features.
-  - An AI-powered comparison summary with recommendations for each use case.
-  - An option to translate the comparison into any language.
-
-    There are other things I'll leave for you to discover. 
-
-How the Tool Works Internally
-
-┌─────────────────────────────────────────────────────┐
-│                    User Request                     │
-└──────────────────────┬──────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│                 Language Detection                  │
-│                    Non-English?                     │
-└──────────────────────┬──────────────────────────────┘
-                       │ Yes
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│                Translate to English                 │
-│        Google → MyMemory → Lingva → fallback        │
-└──────────────────────┬──────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│                 AI Query Expansion                  │
-│       sub_queries + q1/q2 + keywords + lang         │
-└──────────────────────┬──────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────┐
-│            Parallel Search in 9 Platforms           │
-│             ThreadPoolExecutor (max 10)             │
-├─────────────────────────────┬───────────────────────┤
-│         Direct API          │     DDG Fallback      │
-│  GitHub / HuggingFace       │  GitLab / Bitbucket   │
-│    PyPI / npm / Docker      │ Codeberg / SourceForge│
-└─────────────────────────────┴──────────┬────────────┘
-                                         │
-                                         ▼
-┌─────────────────────────────────────────────────────┐
-│                 Smart Deduplication                 │
-└──────────────────────────────┬──────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────┐
-│                    AI Pre-filter                    │
-│                  AI Ranking 0-100                   │
-│                   50% + 30% + 20%                   │
-└──────────────────────────────┬──────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────┐
-│                    Results Table                    │
-│                   + Actions Menu                    │
-└─────────────────────────────────────────────────────┘
-
-Supported Licenses
-
-The tool automatically explains the details of any project's license:
+## Supported Licenses
 
 | License             | Allowed                                    | Conditions / Requirements                          |
 | :------------------ | :----------------------------------------- | :------------------------------------------------- |
@@ -203,20 +248,52 @@ The tool automatically explains the details of any project's license:
 | **BSD 2/3**         | Commercial use, distribution               | Include license and copyright notice               |
 | **Unlicense / CC0** | Everything — Public Domain                 | None                                               |
 
-Requirements
+## Requirements
 
-  - Python 3.8 or newer
-  - Active internet connection
-  - Libraries: requests, questionary, rich, duckduckgo-search, deep_translator,
-    g4f
-    -It works on all terminals (termux/linux..)
+- Python 3.8+
+- Active internet connection
+- Tested on Linux, Termux, macOS
 
-Notes
+## Notes
 
-  - The tool is designed to work even if one of its modules fails — every
-    component has an automated fallback.
-  - No API key is required to start using the tool.
-  - GitHub search results may be limited by rate limits if you do not provide an
-    official token.
+- The tool is designed to work even if a module fails — every component has an automated fallback
+- No API key is required, but a **GitHub token** is recommended for higher rate limits
+- Put your `GITHUB_TOKEN` in a `.env` file (copy from `.env.example`) — it's loaded automatically and won't be committed
+- PyPI and Docker Hub results may be less precise than GitHub results
+- g4f is available as a last-resort fallback but is **not required** — DDG Chat is preferred
 
-The tool searches all the mentioned sites; it may be inaccurate when searching on Pypi or Docker, but it still provides good results.  The search focuses on comparing the tool description with the user description to show exactly the tool you want. 
+## Roadmap
+
+### Phase 1: Critical Bug Fixes ✅ (Complete)
+- [x] **Fix Language Detection** — Now detects Arabic, Japanese, Korean, Russian, Hindi, Chinese
+- [x] **GitHub Token Support** — `GITHUB_TOKEN` env var for 5000 req/hr
+- [x] **Atomic Cache Writes** — `tempfile.mkstemp` + `os.replace` prevents corruption
+- [x] **Replace g4f as Default** — DuckDuckGo Chat is now primary (faster, no IP bans)
+- [x] **Migrate PyPI to JSON API** — JSON search primary, XML-RPC fallback
+- [x] **Centralized Logging** — `utils/logger.py` replaces bare `except: pass`
+
+### Phase 2: Improve Test Coverage 🔄 (In Progress)
+- [ ] Unit tests for search engines, translation, cache, AI ranking
+- [ ] Integration tests for multi-platform search workflow
+- [ ] CI pipeline (GitHub Actions)
+
+### Phase 3: Performance & Features 📋 (Planned)
+- [ ] Result pagination for large result sets
+- [ ] Filter by language, license, stars range, last update
+- [ ] Config file support (`~/.config/opensourcesearch/config.json`)
+- [ ] Shell completion scripts (bash/zsh)
+- [ ] Search result caching (individual results, not just queries)
+
+### Phase 4: Long-term Vision 🔮 (Future)
+- [ ] Go rewrite — single binary, no Python dependency
+- [ ] Web UI alongside CLI
+- [ ] REST API for third-party integration
+- [ ] Package on PyPI (`pip install opensourcesearch`)
+
+### Phase 5: Search Quality & Usability 📈 (Planned)
+- [ ] **Improve search result relevance** — fine-tune keyword extraction and boosting, filter low-quality repos (no description, archived)
+- [ ] **Enhance usage fetching** — fall back to PyPI/npm/Docker Hub README when GitHub README unavailable, detect monorepo sub-packages
+- [ ] Result sorting by stars, license, language before AI ranking
+- [ ] Show more metadata per result (last commit date, open issues count)
+- [ ] Multi-page results (scroll beyond top 15)
+- [ ] Better error messages when APIs fail, with retry hints
